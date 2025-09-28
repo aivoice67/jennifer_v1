@@ -1,0 +1,233 @@
+{
+  "assessment": {
+    "questions": {
+      "1": {
+        "question": "What language do you want to proceed in?",
+        "options": {
+          "english": "English",
+          "french": "French",
+          "spanish": "Spanish",
+          "hindi": "Hindi"
+        }
+      },
+      "2": {
+        "question": "How are you feeling today?",
+        "options": {
+          "calm": "Calm",
+          "anxious": "Anxious",
+          "sad": "Sad",
+          "angry": "Angry",
+          "overwhelmed": "Overwhelmed",
+          "other": "Other"
+        }
+      },
+      "3": {
+        "question": "What brings you here today?",
+        "options": {
+          "stress": "Stress",
+          "relationships": "Relationships",
+          "self_reflection": "Self-reflection",
+          "building_confidence": "Building confidence",
+          "challenges": "Challenges",
+          "other": "Other"
+        }
+      },
+      "4": {
+        "question": "What's your biggest challenge right now?",
+        "options": {
+          "work": "Work",
+          "relationships": "Relationships",
+          "motivation": "Motivation",
+          "managing_emotions": "Managing emotions",
+          "confidence": "Confidence",
+          "other": "Other"
+        }
+      },
+      "5": {
+        "question": "How often do you feel overwhelmed?",
+        "options": {
+          "daily": "Daily",
+          "weekly": "Weekly",
+          "monthly": "Monthly",
+          "rarely": "Rarely",
+          "never": "Never"
+        }
+      },
+      "6": {
+        "question": "How's your energy level today?",
+        "options": {
+          "high": "High",
+          "moderate": "Moderate",
+          "low": "Low",
+          "very_low": "Very Low"
+        }
+      },
+      "7": {
+        "question": "How do you usually handle difficult moments?",
+        "options": {
+          "talking": "Talking",
+          "exercise": "Exercise",
+          "self_care": "Self-care",
+          "hobbies": "Hobbies",
+          "avoidance": "Avoidance",
+          "other": "Other"
+        }
+      },
+      "8": {
+        "question": "What does your typical day look like?",
+        "options": {
+          "productive": "Productive",
+          "busy": "Busy",
+          "unstructured": "Unstructured",
+          "relaxed": "Relaxed",
+          "other": "Other"
+        }
+      },
+      "9": {
+        "question": "How do you feel about sharing your emotions?",
+        "options": {
+          "very_comfortable": "Very comfortable",
+          "somewhat_comfortable": "Somewhat comfortable",
+          "not_comfortable": "Not comfortable",
+          "uncomfortable": "Uncomfortable"
+        }
+      },
+      "10": {
+        "question": "Where are you located?",
+        "placeholder": "Select your country"
+      }
+    },
+    "ui": {
+      "next": "Next",
+      "start_chat": "Start Chat",
+      "specify_placeholder": "Please specify..."
+    }
+  },
+  "chat": {
+    "ui": {
+      "language": "Language",
+      "select_language": "Select Language",
+      "start_recording": "Start recording",
+      "stop_recording": "Stop recording",
+      "send_message": "Send message",
+      "play_audio": "Play audio",
+      "pause_audio": "Pause audio",
+      "loading": "Loading...",
+      "thinking": "Jennifer is thinking...",
+      "type_message": "Type your message here...",
+      "emergency_contact": "Emergency Contact",
+      "call_now": "Call Now",
+      "disclaimer": "This AI therapist is not a qualified mental health professional and should not replace licensed therapeutic care. If you feel you are at risk or experiencing a mental health emergency, please call",
+      "immediately": "immediately."
+    },
+    "messages": {
+      "welcome": "Hello! I'm Jennifer, your personal wellness companion. I'm here to listen and support you through whatever you're going through. How are you feeling today?",
+      "audio_not_supported": "Audio recording is not supported in your browser.",
+      "speech_not_supported": "Speech recognition is not supported in your browser."
+    }
+  },
+  "results": {
+    "title": "Your Assessment Results",
+    "summary": "Assessment Summary",
+    "recommendations": "Recommendations",
+    "export_pdf": "Export to PDF",
+    "start_over": "Start Over"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "try_again": "Try Again",
+    "back": "Back",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "errors": {
+    "not_found": "Page Not Found",
+    "not_found_description": "The page you are looking for does not exist.",
+    "go_home": "Go Home",
+    "network_error": "Network Error",
+    "please_try_again": "Please try again later."
+  },
+  "countries": {
+    "Afghanistan": "Afghanistan",
+    "Albania": "Albania",
+    "Algeria": "Algeria",
+    "Argentina": "Argentina",
+    "Armenia": "Armenia",
+    "Australia": "Australia",
+    "Austria": "Austria",
+    "Bangladesh": "Bangladesh",
+    "Belgium": "Belgium",
+    "Bolivia": "Bolivia",
+    "Brazil": "Brazil",
+    "Bulgaria": "Bulgaria",
+    "Cambodia": "Cambodia",
+    "Canada": "Canada",
+    "Chile": "Chile",
+    "China": "China",
+    "Colombia": "Colombia",
+    "Croatia": "Croatia",
+    "Czech Republic": "Czech Republic",
+    "Denmark": "Denmark",
+    "Ecuador": "Ecuador",
+    "Egypt": "Egypt",
+    "Finland": "Finland",
+    "France": "France",
+    "Germany": "Germany",
+    "Ghana": "Ghana",
+    "Greece": "Greece",
+    "Hungary": "Hungary",
+    "Iceland": "Iceland",
+    "India": "India",
+    "Indonesia": "Indonesia",
+    "Iran": "Iran",
+    "Iraq": "Iraq",
+    "Ireland": "Ireland",
+    "Israel": "Israel",
+    "Italy": "Italy",
+    "Japan": "Japan",
+    "Jordan": "Jordan",
+    "Kazakhstan": "Kazakhstan",
+    "Kenya": "Kenya",
+    "Kuwait": "Kuwait",
+    "Latvia": "Latvia",
+    "Lebanon": "Lebanon",
+    "Libya": "Libya",
+    "Lithuania": "Lithuania",
+    "Malaysia": "Malaysia",
+    "Mexico": "Mexico",
+    "Morocco": "Morocco",
+    "Netherlands": "Netherlands",
+    "New Zealand": "New Zealand",
+    "Nigeria": "Nigeria",
+    "Norway": "Norway",
+    "Pakistan": "Pakistan",
+    "Peru": "Peru",
+    "Philippines": "Philippines",
+    "Poland": "Poland",
+    "Portugal": "Portugal",
+    "Qatar": "Qatar",
+    "Romania": "Romania",
+    "Russia": "Russia",
+    "Saudi Arabia": "Saudi Arabia",
+    "Singapore": "Singapore",
+    "South Africa": "South Africa",
+    "South Korea": "South Korea",
+    "Spain": "Spain",
+    "Sri Lanka": "Sri Lanka",
+    "Sweden": "Sweden",
+    "Switzerland": "Switzerland",
+    "Thailand": "Thailand",
+    "Turkey": "Turkey",
+    "Ukraine": "Ukraine",
+    "United Arab Emirates": "United Arab Emirates",
+    "United Kingdom": "United Kingdom",
+    "United States": "United States",
+    "Venezuela": "Venezuela",
+    "Vietnam": "Vietnam"
+  }
+}
