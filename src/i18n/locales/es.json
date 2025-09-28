@@ -1,0 +1,233 @@
+{
+  "assessment": {
+    "questions": {
+      "1": {
+        "question": "¿En qué idioma deseas continuar?",
+        "options": {
+          "english": "Inglés",
+          "french": "Francés",
+          "spanish": "Español",
+          "hindi": "Hindi"
+        }
+      },
+      "2": {
+        "question": "¿Cómo te sientes hoy?",
+        "options": {
+          "calm": "Tranquilo",
+          "anxious": "Ansioso",
+          "sad": "Triste",
+          "angry": "Enojado",
+          "overwhelmed": "Abrumado",
+          "other": "Otro"
+        }
+      },
+      "3": {
+        "question": "¿Qué te trae aquí hoy?",
+        "options": {
+          "stress": "Estrés",
+          "relationships": "Relaciones",
+          "self_reflection": "Autorreflexión",
+          "building_confidence": "Construir confianza",
+          "challenges": "Desafíos",
+          "other": "Otro"
+        }
+      },
+      "4": {
+        "question": "¿Cuál es tu mayor desafío en este momento?",
+        "options": {
+          "work": "Trabajo",
+          "relationships": "Relaciones",
+          "motivation": "Motivación",
+          "managing_emotions": "Manejar emociones",
+          "confidence": "Confianza",
+          "other": "Otro"
+        }
+      },
+      "5": {
+        "question": "¿Con qué frecuencia te sientes abrumado?",
+        "options": {
+          "daily": "Diariamente",
+          "weekly": "Semanalmente",
+          "monthly": "Mensualmente",
+          "rarely": "Raramente",
+          "never": "Nunca"
+        }
+      },
+      "6": {
+        "question": "¿Cómo está tu nivel de energía hoy?",
+        "options": {
+          "high": "Alto",
+          "moderate": "Moderado",
+          "low": "Bajo",
+          "very_low": "Muy bajo"
+        }
+      },
+      "7": {
+        "question": "¿Cómo manejas usualmente los momentos difíciles?",
+        "options": {
+          "talking": "Hablando",
+          "exercise": "Ejercicio",
+          "self_care": "Autocuidado",
+          "hobbies": "Pasatiempos",
+          "avoidance": "Evitación",
+          "other": "Otro"
+        }
+      },
+      "8": {
+        "question": "¿Cómo es tu día típico?",
+        "options": {
+          "productive": "Productivo",
+          "busy": "Ocupado",
+          "unstructured": "Sin estructura",
+          "relaxed": "Relajado",
+          "other": "Otro"
+        }
+      },
+      "9": {
+        "question": "¿Cómo te sientes al compartir tus emociones?",
+        "options": {
+          "very_comfortable": "Muy cómodo",
+          "somewhat_comfortable": "Algo cómodo",
+          "not_comfortable": "No cómodo",
+          "uncomfortable": "Incómodo"
+        }
+      },
+      "10": {
+        "question": "¿Dónde te encuentras ubicado?",
+        "placeholder": "Selecciona tu país"
+      }
+    },
+    "ui": {
+      "next": "Siguiente",
+      "start_chat": "Iniciar chat",
+      "specify_placeholder": "Por favor especifica..."
+    }
+  },
+  "chat": {
+    "ui": {
+      "language": "Idioma",
+      "select_language": "Seleccionar idioma",
+      "start_recording": "Iniciar grabación",
+      "stop_recording": "Parar grabación",
+      "send_message": "Enviar mensaje",
+      "play_audio": "Reproducir audio",
+      "pause_audio": "Pausar audio",
+      "loading": "Cargando...",
+      "thinking": "Jennifer está pensando...",
+      "type_message": "Escribe tu mensaje aquí...",
+      "emergency_contact": "Contacto de emergencia",
+      "call_now": "Llamar ahora",
+      "disclaimer": "Esta terapeuta de IA no es un profesional de salud mental calificado y no debe reemplazar la atención terapéutica licenciada. Si sientes que estás en riesgo o experimentando una emergencia de salud mental, por favor llama al",
+      "immediately": "inmediatamente."
+    },
+    "messages": {
+      "welcome": "¡Hola! Soy Jennifer, tu compañera de bienestar personal. Estoy aquí para escucharte y apoyarte en lo que estés pasando. ¿Cómo te sientes hoy?",
+      "audio_not_supported": "La grabación de audio no es compatible con tu navegador.",
+      "speech_not_supported": "El reconocimiento de voz no es compatible con tu navegador."
+    }
+  },
+  "results": {
+    "title": "Tus resultados de evaluación",
+    "summary": "Resumen de evaluación",
+    "recommendations": "Recomendaciones",
+    "export_pdf": "Exportar a PDF",
+    "start_over": "Empezar de nuevo"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Algo salió mal",
+    "try_again": "Intentar de nuevo",
+    "back": "Atrás",
+    "continue": "Continuar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "errors": {
+    "not_found": "Página no encontrada",
+    "not_found_description": "La página que buscas no existe.",
+    "go_home": "Ir al inicio",
+    "network_error": "Error de red",
+    "please_try_again": "Por favor intenta de nuevo más tarde."
+  },
+  "countries": {
+    "Afghanistan": "Afganistán",
+    "Albania": "Albania",
+    "Algeria": "Argelia",
+    "Argentina": "Argentina",
+    "Armenia": "Armenia",
+    "Australia": "Australia",
+    "Austria": "Austria",
+    "Bangladesh": "Bangladesh",
+    "Belgium": "Bélgica",
+    "Bolivia": "Bolivia",
+    "Brazil": "Brasil",
+    "Bulgaria": "Bulgaria",
+    "Cambodia": "Camboya",
+    "Canada": "Canadá",
+    "Chile": "Chile",
+    "China": "China",
+    "Colombia": "Colombia",
+    "Croatia": "Croacia",
+    "Czech Republic": "República Checa",
+    "Denmark": "Dinamarca",
+    "Ecuador": "Ecuador",
+    "Egypt": "Egipto",
+    "Finland": "Finlandia",
+    "France": "Francia",
+    "Germany": "Alemania",
+    "Ghana": "Ghana",
+    "Greece": "Grecia",
+    "Hungary": "Hungría",
+    "Iceland": "Islandia",
+    "India": "India",
+    "Indonesia": "Indonesia",
+    "Iran": "Irán",
+    "Iraq": "Irak",
+    "Ireland": "Irlanda",
+    "Israel": "Israel",
+    "Italy": "Italia",
+    "Japan": "Japón",
+    "Jordan": "Jordania",
+    "Kazakhstan": "Kazajistán",
+    "Kenya": "Kenia",
+    "Kuwait": "Kuwait",
+    "Latvia": "Letonia",
+    "Lebanon": "Líbano",
+    "Libya": "Libia",
+    "Lithuania": "Lituania",
+    "Malaysia": "Malasia",
+    "Mexico": "México",
+    "Morocco": "Marruecos",
+    "Netherlands": "Países Bajos",
+    "New Zealand": "Nueva Zelanda",
+    "Nigeria": "Nigeria",
+    "Norway": "Noruega",
+    "Pakistan": "Pakistán",
+    "Peru": "Perú",
+    "Philippines": "Filipinas",
+    "Poland": "Polonia",
+    "Portugal": "Portugal",
+    "Qatar": "Qatar",
+    "Romania": "Rumania",
+    "Russia": "Rusia",
+    "Saudi Arabia": "Arabia Saudita",
+    "Singapore": "Singapur",
+    "South Africa": "Sudáfrica",
+    "South Korea": "Corea del Sur",
+    "Spain": "España",
+    "Sri Lanka": "Sri Lanka",
+    "Sweden": "Suecia",
+    "Switzerland": "Suiza",
+    "Thailand": "Tailandia",
+    "Turkey": "Turquía",
+    "Ukraine": "Ucrania",
+    "United Arab Emirates": "Emiratos Árabes Unidos",
+    "United Kingdom": "Reino Unido",
+    "United States": "Estados Unidos",
+    "Venezuela": "Venezuela",
+    "Vietnam": "Vietnam"
+  }
+}
