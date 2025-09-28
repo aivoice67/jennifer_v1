@@ -26,4 +26,19 @@ export default defineConfig(({ mode }) => ({
     // Expose compile-time constant for comparison in client code
     __AUTH_PIN__: JSON.stringify(AUTH_PIN),
   },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) return 'vendor-react';
+            if (id.includes('@radix-ui')) return 'vendor-radix';
+            if (id.includes('i18next')) return 'vendor-i18n';
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
 }));
