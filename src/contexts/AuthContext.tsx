@@ -7,14 +7,14 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const LOCAL_KEY = "auth_ok";
+const STORAGE_KEY = "auth_ok"; // per-tab session storage key
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(LOCAL_KEY);
+      const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored === "1") setIsAuthenticated(true);
     } catch (_) {
       // ignore storage errors
@@ -22,10 +22,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (pin: string) => {
-    if (pin === __AUTH_PIN__) {
+    // Constant-time like comparison to reduce trivial timing attacks
+    const safeEqual = (a: string, b: string) => {
+      if (a.length !== b.length) return false;
+      let result = 0;
+      for (let i = 0; i < a.length; i++) {
+        // XOR char codes; still not perfect in JS but better than early return
+        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+      }
+      return result === 0;
+    };
+
+    if (safeEqual(pin, __AUTH_PIN__)) {
       setIsAuthenticated(true);
       try {
-        localStorage.setItem(LOCAL_KEY, "1");
+        sessionStorage.setItem(STORAGE_KEY, "1");
       } catch (_) {
         // ignore
       }
