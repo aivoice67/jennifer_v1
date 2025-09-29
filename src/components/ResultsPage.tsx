@@ -118,89 +118,88 @@ const ResultsPage = () => {
   };
 
   return (
-    <div className="min-h-screen jennifer-gradient p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="assessment-card">
-          <h1 className="text-3xl font-bold text-center mb-8 text-card-foreground">
-            {t('results.title')}
-          </h1>
-          
-          {/* Assessment Results Table */}
-          <div className="mb-8">
-            <div className="bg-white/80 rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('assessment.questions')}</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('results.summary')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {assessmentAnswers.map((answer, index) => (
-                    <tr key={index}>
-                      <td className="px-6 py-4 text-sm text-gray-900">{answer.question}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{answer.answer}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+    <div className="bg-teal-900 min-h-screen flex flex-col items-center lg:p-6 p-2">
+      <div className="bg-teal-100 lg:p-6 p-2 rounded-lg shadow-md w-full overflow-hidden max-w-5xl">
+        <h1 className="text-2xl font-bold mb-6 text-center text-teal-900">
+          {t('results.title')}
+        </h1>
+
+        {/* Assessment Results Table */}
+        <table className="w-full border-collapse border border-gray-400 mb-6 bg-white/90">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="border border-gray-400 px-4 py-2 text-left text-sm font-semibold text-teal-900">
+                {t('assessment.questions')}
+              </th>
+              <th className="border border-gray-400 px-4 py-2 text-left text-sm font-semibold text-teal-900">
+                {t('results.summary')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {assessmentAnswers.map((answer, index) => (
+              <tr key={index} className="odd:bg-white even:bg-gray-50">
+                <td className="border border-gray-300 px-4 py-2 text-sm text-gray-800 align-top">
+                  {answer.question}
+                </td>
+                <td className="border border-gray-300 px-4 py-2 text-sm text-gray-900 font-medium align-top">
+                  {answer.answer}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Generate Insights Button */}
+        <div className="text-center mt-2">
+          <button
+            onClick={handleGenerateInsights}
+            disabled={isGeneratingInsights}
+            className="bg-white px-4 py-2 rounded-lg shadow-md border border-gray-300 hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isGeneratingInsights ? t('common.loading') : t('results.recommendations')}
+          </button>
+        </div>
+
+        {/* Insights Summary */}
+        {insightsSummary && (
+          <div className="mt-6 p-4 border-t border-gray-400 bg-white/70 rounded-md">
+            <h2 className="font-bold text-xl text-teal-900 mb-3">{t('results.summary')}</h2>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+              {insightsSummary}
+            </p>
+          </div>
+        )}
+
+        {/* Transcript Section */}
+        {conversationHistory.length > 0 && (
+          <div className="mt-6 p-4 border-t border-gray-400">
+            <h2 className="font-bold text-xl text-teal-900">Transcript</h2>
+            <div className="mt-2 max-h-60 overflow-y-auto pr-2">
+              {conversationHistory.map((message, index) => (
+                <p key={index} className="mt-1 text-sm text-gray-800">
+                  <strong>{message.role === 'user' ? t('common.you') ?? 'You' : t('common.therapist') ?? 'Therapist'}:</strong>{' '}
+                  {message.content}
+                </p>
+              ))}
             </div>
           </div>
+        )}
 
-          {/* Generate Insights Button */}
-          <div className="text-center mb-8">
-            <button
-              onClick={handleGenerateInsights}
-              disabled={isGeneratingInsights}
-              className="choice-button selected"
-            >
-              {isGeneratingInsights ? t('common.loading') : t('results.recommendations')}
-            </button>
-          </div>
-
-          {/* Insights Summary */}
-          {insightsSummary && (
-            <div className="mb-8">
-              <h3 className="text-xl font-semibold mb-4">{t('results.summary')}</h3>
-              <div className="bg-white/80 rounded-lg p-6">
-                <p className="text-gray-700 leading-relaxed">{insightsSummary}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Transcript Section */}
-          {conversationHistory.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-xl font-semibold mb-4">Transcript</h3>
-              <div className="bg-white/80 rounded-lg p-6 max-h-60 overflow-y-auto">
-                {conversationHistory.map((message, index) => (
-                  <div key={index} className="mb-4">
-                    <div className="font-semibold text-gray-700">
-                      {message.role === 'user' ? 'You:' : 'Therapist:'}
-                    </div>
-                    <div className="text-gray-600 ml-4">{message.content}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex justify-center space-x-4">
-            <button
-              onClick={generatePDF}
-              className="choice-button selected"
-            >
-              {t('results.export_pdf')}
-            </button>
-            
-            <button
-              onClick={handleDeleteAndReset}
-              className="px-6 py-3 rounded-2xl bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors"
-            >
-              {t('results.start_over')}
-            </button>
-          </div>
+        {/* Action Buttons */}
+        <div className="text-center mt-6 flex flex-col sm:flex-row gap-4 sm:justify-center">
+          <button
+            onClick={generatePDF}
+            className="bg-white px-6 py-2 rounded-lg shadow-md border border-gray-300 hover:bg-gray-100"
+          >
+            {t('results.export_pdf')}
+          </button>
+          <button
+            onClick={handleDeleteAndReset}
+            className="bg-black text-white px-6 py-2 rounded-lg shadow-md hover:bg-gray-800"
+          >
+            {t('results.start_over')}
+          </button>
         </div>
       </div>
     </div>
