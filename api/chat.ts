@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateTTS, buildSystemPrompt, callOpenAIChat, firstMessageTemplate, GetChatResponseParams } from '../server/logic.js';
+import { generateTTS, buildSystemPrompt, callOpenAIChat, firstMessageTemplate, GetChatResponseParams } from '../server/logic';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
