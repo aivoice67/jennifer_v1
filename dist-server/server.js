@@ -5,21 +5,22 @@ import fs from 'fs';
 import cors from 'cors';
 import fetch from 'node-fetch';
 // ================== CONFIG ==================
+// Removed Hume integration; single ElevenLabs provider for all languages
 const HUME_API_KEY = process.env.HUME_API_KEY || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || '';
 const ELEVENLABS2_API_KEY = process.env.ELEVENLABS2_API_KEY || '';
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const HUME_TTS_URL = 'https://api.hume.ai/v0/tts';
+// Removed Hume TTS URL
+const HUME_TTS_URL = '';
 const ELEVENLABS_URL = 'https://api.elevenlabs.io/v1/text-to-speech/4cHjkgQnNiDfoHQieI9o';
-const HUME_VOICE_ID = 'ba783c72-e593-48a2-9764-faf1b5fe1dfa';
+const HUME_VOICE_ID = '';
 // Basic validation warnings (not throwing to allow mock usage)
 if (!OPENAI_API_KEY)
     console.warn('[warn] OPENAI_API_KEY not set. Calls will fail.');
-if (!HUME_API_KEY)
-    console.warn('[warn] HUME_API_KEY not set. Hume TTS calls will fail.');
-if (!ELEVENLABS_API_KEY && !ELEVENLABS2_API_KEY)
-    console.warn('[warn] Neither ELEVENLABS_API_KEY nor ELEVENLABS2_API_KEY set. TTS for non EN/ES will fail.');
+// Only ElevenLabs key required now
+if (!ELEVENLABS_API_KEY)
+    console.warn('[warn] ELEVENLABS_API_KEY not set. TTS calls will fail.');
 // ================== APP INIT ==================
 const app = express();
 app.use(express.json({ limit: '2mb' }));
@@ -68,71 +69,23 @@ async function attachFrontend(app) {
     }
 }
 // ================== HELPERS ==================
-async function generateTTS(text, language) {
-    if (['english', 'spanish'].includes(language)) {
-        // Hume TTS
-        const payload = {
-            utterances: [
-                {
-                    text,
-                    voice: {
-                        id: HUME_VOICE_ID,
-                        provider: 'CUSTOM_VOICE'
-                    }
-                }
-            ],
-            format: { type: 'mp3' }
-        };
-        const resp = await fetch(HUME_TTS_URL, {
-            method: 'POST',
-            headers: {
-                'X-Hume-Api-Key': HUME_API_KEY,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-        if (!resp.ok) {
-            const textErr = await resp.text();
-            throw new Error(`Hume TTS Error: ${textErr}`);
-        }
-        const json = await resp.json();
-        const base64Audio = json.generations?.[0]?.audio;
-        if (!base64Audio)
-            throw new Error('Hume TTS: Missing audio in response');
-        // Write debug file
-        fs.writeFileSync('test.mp3', Buffer.from(base64Audio, 'base64'));
-        return base64Audio;
-    }
-    // ElevenLabs path
-    const payload = {
-        text,
-        voice_settings: { stability: 0.75, similarity_boost: 0.75, speed: 0.93 }
-    };
-    async function callEleven(key) {
-        if (!key)
-            return undefined;
-        const r = await fetch(ELEVENLABS_URL, {
-            method: 'POST',
-            headers: {
-                'xi-api-key': key,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-        return r;
-    }
-    let resp = await callEleven(ELEVENLABS_API_KEY);
-    if (!resp || !resp.ok) {
-        resp = await callEleven(ELEVENLABS2_API_KEY);
-    }
-    if (!resp || !resp.ok) {
-        const errText = resp ? await resp.text() : 'No response';
+async function generateTTS(text, _language) {
+    // Unified ElevenLabs TTS for all languages
+    const payload = { text, voice_settings: { stability: 0.75, similarity_boost: 0.75, speed: 0.93 } };
+    const resp = await fetch(ELEVENLABS_URL, {
+        method: 'POST',
+        headers: {
+            'xi-api-key': ELEVENLABS_API_KEY,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+    if (!resp.ok) {
+        const errText = await resp.text();
         throw new Error(`ElevenLabs TTS Error: ${errText}`);
     }
     const audioBuffer = Buffer.from(await resp.arrayBuffer());
-    const base64Audio = audioBuffer.toString('base64');
-    fs.writeFileSync('test.mp3', audioBuffer);
-    return base64Audio;
+    return audioBuffer.toString('base64');
 }
 async function callOpenAIChat(systemPrompt, userPrompt, history) {
     const messages = [{ role: 'system', content: systemPrompt }];
