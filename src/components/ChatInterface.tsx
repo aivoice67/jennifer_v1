@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Pause, Globe, ChevronDown } from 'lucide-react';
+import { Play, Pause, Globe } from 'lucide-react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { useTranslation } from 'react-i18next';
 import { getChatResponse, ChatMessage } from '@/services/api';
@@ -21,7 +21,9 @@ const ChatInterface = () => {
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioElementsRef = useRef<{ [key: string]: HTMLAudioElement }>({});
+  // WaveSurfer refs (lazy-created) and container refs keyed by messageId
+  const waveSurferRefs = useRef<{ [key: string]: any }>({});
+  const waveContainerRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const { t } = useTranslation();
   const { changeLanguage, supportedLanguages, currentLanguage } = useLanguage();
@@ -130,31 +132,18 @@ const ChatInterface = () => {
         }
       });
       
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
 
-      mediaRecorder.onstop = () => {
-        stream.getTracks().forEach(track => track.stop());
-      };
-
+      mediaRecorder.onstop = () => stream.getTracks().forEach(track => track.stop());
       mediaRecorder.start(1000);
 
-      // Start speech recognition with multi-language support
       resetTranscript();
-      
-      // Try different languages for detection
-      const languagesToTry = ['en-US', 'fr-FR', 'es-ES', 'hi-IN'];
-      
       SpeechRecognition.startListening({
         continuous: true,
         language: detectedLanguage,
@@ -174,14 +163,11 @@ const ChatInterface = () => {
       setIsRecording(false);
       SpeechRecognition.stopListening();
 
-      // Wait a moment for final transcript
       setTimeout(async () => {
         if (transcript && transcript.trim()) {
-          // Detect language from transcript
           const detectedLang = detectLanguageFromText(transcript);
           setDetectedLanguage(detectedLang);
           
-          // Create audio blob for user message
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
           const reader = new FileReader();
           reader.readAsDataURL(audioBlob);
@@ -189,8 +175,6 @@ const ChatInterface = () => {
             const base64Audio = reader.result as string;
             await sendMessage(transcript, base64Audio, detectedLang);
           };
-        } else {
-          console.warn('No transcript available');
         }
       }, 500);
     }
@@ -218,7 +202,7 @@ const ChatInterface = () => {
         assessment_question_answers: assessmentAnswers,
         language: currentLanguage,
         Transcript: messageText,
-        ConversationHistory: updatedHistory.slice(-5), // Last 5 messages
+        ConversationHistory: updatedHistory.slice(-5),
         DetectedLanguage: detectedLang
       });
 
@@ -241,71 +225,94 @@ const ChatInterface = () => {
     resetTranscript();
   };
 
-  const playAudio = async (messageId: string, audioData: string) => {
-    // Stop any currently playing audio
-    Object.values(audioElementsRef.current).forEach(audio => {
-      audio.pause();
-      audio.currentTime = 0;
+  // --- WaveSurfer helpers (waveform visualization replacing custom component) ---
+  const createWaveSurfer = useCallback(async (messageId: string, audioData: string) => {
+    if (waveSurferRefs.current[messageId]) return waveSurferRefs.current[messageId];
+    const WaveSurfer = (await import('wavesurfer.js')).default;
+    const container = waveContainerRefs.current[messageId];
+    if (!container) return null; // container not yet mounted
+    const ws = WaveSurfer.create({
+      container,
+      height: 80,
+      waveColor: 'rgba(255,255,255,0.5)',
+      progressColor: 'rgba(255,255,255,0.8)',
+      cursorColor: 'rgba(255,255,255,0.4)',
+      barWidth: 2,
+      barRadius: 2,
+      barGap: 1,
+      responsive: true,
+      normalize: true,
     });
-    setCurrentPlayingId(null);
+    const src = audioData.startsWith('data:') ? audioData : `data:audio/mp3;base64,${audioData}`;
+    ws.load(src);
+    ws.on('finish', () => {
+      setCurrentPlayingId(prev => (prev === messageId ? null : prev));
+    });
+    waveSurferRefs.current[messageId] = ws;
+    return ws;
+  }, []);
 
+  const togglePlayback = useCallback(async (messageId: string, audioData?: string) => {
     if (!audioData) return;
-
-    try {
-      let audioElement = audioElementsRef.current[messageId];
-
-      if (!audioElement) {
-        audioElement = new Audio();
-        audioElementsRef.current[messageId] = audioElement;
-
-        // Detect correct MIME type (default to mp3 if coming from backend)
-        let audioUrl: string;
-        if (audioData.startsWith("data:")) {
-          audioUrl = audioData; // already has MIME type
-        } else {
-          audioUrl = `data:audio/mp3;base64,${audioData}`;
-        }
-
-        audioElement.src = audioUrl;
-
-        audioElement.onended = () => {
-          setCurrentPlayingId(null);
-        };
-
-        audioElement.onerror = (err) => {
-          console.error("Error playing audio", err);
-          setCurrentPlayingId(null);
-        };
+    // Pause all other waveforms
+    Object.entries(waveSurferRefs.current).forEach(([id, inst]) => {
+      if (id !== messageId && inst && !inst.isDestroyed && inst.isPlaying()) {
+        try { inst.pause(); } catch {}
       }
-
-      setCurrentPlayingId(messageId);
-      await audioElement.play();
-    } catch (error) {
-      console.error("Error playing audio:", error);
+    });
+    let ws = waveSurferRefs.current[messageId];
+    if (!ws) {
+      ws = await createWaveSurfer(messageId, audioData);
+      if (!ws) {
+        // Retry shortly if container not ready yet
+        setTimeout(() => togglePlayback(messageId, audioData), 50);
+        return;
+      }
+      ws.once('ready', () => {
+        ws.play();
+        setCurrentPlayingId(messageId);
+      });
+      return;
+    }
+    if (ws.isPlaying()) {
+      ws.pause();
       setCurrentPlayingId(null);
+    } else {
+      ws.play();
+      setCurrentPlayingId(messageId);
     }
-  };
+  }, [createWaveSurfer]);
 
+  // Ensure waveform is visible (pre-render) even before user presses play
+  useEffect(() => {
+    conversationHistory.forEach(msg => {
+      if (
+        msg.audioData &&
+        msg.messageId &&
+        !waveSurferRefs.current[msg.messageId] &&
+        waveContainerRefs.current[msg.messageId]
+      ) {
+        // Fire and forget; no autoplay
+        createWaveSurfer(msg.messageId, msg.audioData).catch(() => {});
+      }
+    });
+  }, [conversationHistory, createWaveSurfer]);
+
+  // Backwards compatibility wrappers (names kept though render now uses togglePlayback)
+  const playAudio = async (messageId: string, audioData: string) => togglePlayback(messageId, audioData);
   const pauseAudio = (messageId: string) => {
-    const audioElement = audioElementsRef.current[messageId];
-    if (audioElement) {
-      audioElement.pause();
-    }
+    const ws = waveSurferRefs.current[messageId];
+    if (ws && ws.isPlaying()) ws.pause();
     setCurrentPlayingId(null);
   };
 
   const handleEndCall = () => {
-    // Stop recording if active
     if (isRecording) {
       SpeechRecognition.stopListening();
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-      }
+      if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
     }
-    
-    // Stop any playing audio
-    Object.values(audioElementsRef.current).forEach(audio => {
-      audio.pause();
+    Object.values(waveSurferRefs.current).forEach(ws => {
+      try { if (ws.isPlaying()) ws.pause(); } catch {}
     });
     navigate('/results');
   };
@@ -317,88 +324,15 @@ const ChatInterface = () => {
     await changeLanguage(newLanguage);
   };
 
-  // Enhanced audio waveform visualization
-  const AudioWaveform = ({ isPlaying }: { isPlaying: boolean }) => {
-    const containerRef = useRef<HTMLDivElement | null>(null);
-    const rafRef = useRef<number | null>(null);
-    const barCount = 32; // More bars for smoother look
-    const barsRef = useRef<HTMLDivElement[]>([]);
-    const phaseRef = useRef(0);
+  // Destroy WaveSurfer instances on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(waveSurferRefs.current).forEach(ws => {
+        try { ws.destroy(); } catch {}
+      });
+    };
+  }, []);
 
-    useEffect(() => {
-      const animate = () => {
-        const phase = phaseRef.current;
-        const speed = 0.08; // base speed of waveform travel
-        phaseRef.current = phase + speed;
-        const baseAmplitude = 22; // max height delta
-        const minHeight = 4; // baseline height
-        barsRef.current.forEach((bar, i) => {
-          if (!bar) return;
-          // Create a traveling sine wave + layered noise for realism
-            const progress = (i / barCount) * Math.PI * 2;
-            const sine = Math.sin(progress + phase) * 0.6 + Math.sin(progress * 2 + phase * 1.3) * 0.3;
-            const noise = (Math.random() - 0.5) * 0.4; // subtle randomness
-            const intensity = Math.max(0, Math.min(1, (sine + noise + 1) / 2));
-            const targetHeight = isPlaying
-              ? minHeight + intensity * baseAmplitude
-              : minHeight + Math.sin(progress) * 2; // gentle idle breathing
-            const current = parseFloat(bar.dataset.h || '0');
-            const eased = current + (targetHeight - current) * 0.25; // smoothing
-            bar.style.height = `${eased}px`;
-            bar.dataset.h = `${eased}`;
-            const opacity = 0.35 + intensity * 0.65;
-            bar.style.opacity = `${opacity}`;
-        });
-        if (isPlaying || phaseRef.current % (Math.PI * 2) < 1000) {
-          rafRef.current = requestAnimationFrame(animate);
-        }
-      };
-
-      if (!containerRef.current) return;
-      // Initialize bars if not already
-      if (barsRef.current.length === 0) {
-        barsRef.current = Array.from(containerRef.current.querySelectorAll('[data-bar="true"]')) as HTMLDivElement[];
-      }
-
-      // Kick off animation
-      rafRef.current = requestAnimationFrame(animate);
-      return () => {
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      };
-    }, [isPlaying]);
-
-    return (
-      <div ref={containerRef} className="flex items-end justify-center h-10 gap-[3px] select-none" aria-label={isPlaying ? 'Audio playing' : 'Audio paused'}>
-        {Array.from({ length: barCount }).map((_, i) => {
-          const mirrorIndex = i < barCount / 2 ? i : barCount - i - 1;
-          const gradientOffset = (mirrorIndex / (barCount / 2));
-          // Interpolate between theme greens/teals
-          const startColor = '#1fa67a';
-          const endColor = '#20b2aa';
-          const r1 = parseInt(startColor.slice(1,3),16), g1 = parseInt(startColor.slice(3,5),16), b1 = parseInt(startColor.slice(5,7),16);
-          const r2 = parseInt(endColor.slice(1,3),16), g2 = parseInt(endColor.slice(3,5),16), b2 = parseInt(endColor.slice(5,7),16);
-          const r = Math.round(r1 + (r2 - r1) * gradientOffset);
-          const g = Math.round(g1 + (g2 - g1) * gradientOffset);
-          const b = Math.round(b1 + (b2 - b1) * gradientOffset);
-          const color = `rgb(${r} ${g} ${b})`;
-          return (
-            <div
-              key={i}
-              data-bar="true"
-              data-h="6"
-              className="w-[4px] rounded-sm transition-[height] duration-150 ease-out bg-gradient-to-b from-white/70 to-white/10 shadow-[0_0_6px_-1px_rgba(255,255,255,0.4)]"
-              style={{
-                background: `linear-gradient(to top, rgba(${r},${g},${b},0.15), rgba(${r},${g},${b},0.9))`,
-                height: '6px'
-              }}
-            />
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Get emergency number based on user's location from assessment
   const userLocation = getStoredAssessment().find(a => a.questionId === 10)?.answer || 'United States';
   const emergencyNumber = getEmergencyNumber(userLocation);
 
@@ -480,23 +414,16 @@ const ChatInterface = () => {
                 <div
                   key={message.messageId || index}
                   className={`w-full lg:max-w-[460px] max-w-[300px] mx-auto ${
-                    message.role === 'assistant'
-                      ? 'ml-4 bg-black/40'
-                      : 'ml-auto lg:ml-[10rem] bg-gradient-to-br from-[#248A52] to-[#257287]'
-                  } rounded-lg p-4 flex flex-col`}
+                    message.role === "assistant"
+                      ? "ml-4 bg-black/40"
+                      : "ml-auto lg:ml-[10rem] bg-gradient-to-br from-[#248A52] to-[#257287]"
+                  } rounded-lg p-4 flex items-center`}
                 >
-                  <div className="text-white text-sm">{message.content}</div>
-
-                  {/* Audio player */}
                   {message.audioData && (
-                    <div className="mt-3 flex items-center gap-3">
+                    <>
                       <button
-                        onClick={() =>
-                          currentPlayingId === message.messageId
-                            ? pauseAudio(message.messageId!)
-                            : playAudio(message.messageId!, message.audioData!)
-                        }
-                        className={`w-[55px] h-[55px] rounded-full border-white border-[2px] text-[30px] transition-colors duration-300 ${
+                        onClick={() => togglePlayback(message.messageId!, message.audioData!)}
+                        className={`w-[55px] h-[55px] rounded-full border-white border-[2px] text-[30px] transition-colors duration-300 mr-3 ${
                           currentPlayingId === message.messageId
                             ? 'bg-[greenyellow]'
                             : 'bg-[#20b2aa]'
@@ -508,19 +435,18 @@ const ChatInterface = () => {
                           <Play size={24} className="mx-auto text-white" />
                         )}
                       </button>
-                      <div className="flex-1">
-                        <AudioWaveform
-                          isPlaying={currentPlayingId === message.messageId}
-                        />
-                      </div>
-                    </div>
+                      <div
+                        className="flex-1"
+                        ref={(el) => (waveContainerRefs.current[message.messageId!] = el)}
+                      />
+                    </>
                   )}
                 </div>
               ))}
 
               {isLoading && (
                 <div className="w-full lg:max-w-[460px] max-w-[300px] mx-auto ml-4 bg-black/40 rounded-lg p-4 text-white">
-                  {t('chat.ui.thinking')}
+                  {t("chat.ui.thinking")}
                 </div>
               )}
             </div>
@@ -529,7 +455,7 @@ const ChatInterface = () => {
           {/* Footer */}
           <div className="z-[2] bg-black/60 h-[46px] w-full flex justify-between items-center px-4">
             <span className="text-[#ffffffb3] text-[11px]">
-              {t('chat.ui.start_recording') || 'Record your message'}
+              {t("chat.ui.start_recording") || "Record your message"}
             </span>
             {!isRecording ? (
               <button
@@ -552,10 +478,9 @@ const ChatInterface = () => {
 
         {/* Footer Disclaimer */}
         <div className="p-4 text-center text-white/80 text-xs">
-          ⚠️ {t('chat.ui.disclaimer')} {emergencyNumber} {t('chat.ui.immediately')}
+          ⚠️ {t("chat.ui.disclaimer")} {emergencyNumber} {t("chat.ui.immediately")}
         </div>
       </div>
-
 
       {/* Blurred Background */}
       <div className="fixed top-0 left-0 w-full h-full z-[1] bg-[url('https://images.unsplash.com/photo-1451186859696-371d9477be93?crop=entropy&fit=crop&fm=jpg&h=975&ixlib=rb-0.3.5&q=80&w=1925')] bg-no-repeat bg-cover blur-[80px] scale-[1.2]"></div>
