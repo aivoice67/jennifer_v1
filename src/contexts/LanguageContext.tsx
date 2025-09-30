@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGE_CODES, LANGUAGE_NAMES } from '@/i18n/config';
+import { relocalizeStoredAssessment } from '@/data/assessmentQuestions';
 
 interface LanguageContextType {
   currentLanguage: string;
@@ -67,15 +68,18 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         return;
       }
 
-      // Change i18n language
-      await i18n.changeLanguage(languageCode);
+  // Change i18n language
+  await i18n.changeLanguage(languageCode);
       
       // Save to session storage
       const languageName = LANGUAGE_NAMES[languageCode];
       sessionStorage.setItem('jennifer_language', languageName);
       sessionStorage.setItem('jennifer_language_code', languageCode);
       
-      console.log('Language changed to:', languageName, `(${languageCode})`);
+  // Re-localize stored assessment answers (if any) into the new language
+  relocalizeStoredAssessment(languageCode);
+
+  console.log('Language changed to:', languageName, `(${languageCode})`);
     } catch (error) {
       console.error('Error changing language:', error);
     } finally {
