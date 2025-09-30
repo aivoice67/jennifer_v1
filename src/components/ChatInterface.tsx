@@ -404,7 +404,7 @@ const ChatInterface = () => {
               </div>
             </div>
             <button
-              className="bg-red-500 text-[10px] rounded-lg h-[22px] w-[63px] text-white"
+              className="bg-red-500 text-[10px] rounded-lg h-[35px] w-[65px] text-white"
               onClick={handleEndCall}
             >
               {t('common.close')}
