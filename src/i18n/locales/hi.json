@@ -11,7 +11,7 @@
         }
       },
       "2": {
-        "question": "Aapka kaisa mehsoos kar rahe hain?",
+        "question": "Aap kaisa mehsoos kar rahe hain?",
         "options": {
           "calm": "Shaant",
           "anxious": "Pareshan",
@@ -54,11 +54,11 @@
         }
       },
       "6": {
-        "question": "Aaj aapka energy level kaisa hai?",
+        "question": "Aaj aapke energy levels kaise hain?",
         "options": {
-          "high": "Zyada",
+          "high": "Kaafi Zyada",
           "moderate": "Theek-thaak",
-          "low": "Kam",
+          "low": "Kaafi Kam",
           "very_low": "Bahut kam"
         }
       },
@@ -74,7 +74,7 @@
         }
       },
       "8": {
-        "question": "Aapka aam din kaisa hota hai?",
+        "question": "Aapka din aam taur par kaisa hota hai?",
         "options": {
           "productive": "Utpaadak",
           "busy": "Vyast",
@@ -88,17 +88,17 @@
         "options": {
           "very_comfortable": "Bilkul araam se",
           "somewhat_comfortable": "Thodi mushkil hoti hai",
-          "not_comfortable": "Haan lekin bohot kam",
+          "not_comfortable": "Haan lekin bahut kam",
           "uncomfortable": "Bilkul bhi nahi"
         }
       },
       "10": {
-        "question": "Aap kahan se call kar rahe hain?",
+        "question": "Aap kahaan se hain?",
         "placeholder": "Apna desh chunein"
       }
     },
     "ui": {
-      "next": "Agla",
+      "next": "Aage badhein",
       "start_chat": "Chat shuru karein",
       "specify_placeholder": "Aur bataein..."
     }
@@ -117,8 +117,8 @@
       "type_message": "Yahan apna message type karein...",
       "emergency_contact": "Emergency Contact",
       "call_now": "Abhi call karein",
-      "disclaimer": "Ye AI therapist ek licensed mental health professional nahi hai aur ise asli medical care ki jagah nahi lena chahiye. Agar aap risk mein mehsoos kar rahe hain ya emergency ka samna kar rahe hain toh kripya",
-      "immediately": "turant call karein."
+      "disclaimer": "Jennifer ek AI therapist voicebot hai. Woh ek licensed medical health professional nahi hai, aur iss kaaran asli medical care ki jagah nahi le sakti. Agar aap khatra ya mansik peeda mehsoos kar rahe hain, ya phir emergency mein hain, kripya",
+      "immediately": "ko turant call karein."
     },
     "messages": {
       "welcome": "Namaste! Main Jennifer hoon, aapki personal wellness saathi. Main yahan aapki baat sunne aur jo bhi aap face kar rahe hain usmein aapka saath dene ke liye hoon. Aaj aapka kaisa mood hai?",
@@ -141,7 +141,7 @@
     "continue": "Aage badhein",
     "cancel": "Cancel",
     "save": "Save karein",
-    "close": "Band karein",
+    "close": "Chat khatm karein",
     "yes": "Haan",
     "no": "Nahi"
   },
