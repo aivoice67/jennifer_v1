@@ -34,56 +34,48 @@ const AssessmentForm = () => {
 
   const handleAnswerSelect = (answer: string) => {
     setSelectedAnswer(answer);
+    const q = assessmentQuestions[currentQuestion];
     if (answer !== 'Other') {
       setOtherText('');
       const updatedAnswers = new Map(answers);
-      updatedAnswers.set(assessmentQuestions[currentQuestion].id, answer);
+      updatedAnswers.set(q.id, answer);
       setAnswers(updatedAnswers);
-      
-      // Store in session storage
-      storeAssessmentAnswer(
-        assessmentQuestions[currentQuestion].id,
-        assessmentQuestions[currentQuestion].question,
-        answer
-      );
 
-      // Handle language selection for the first question
+      // Store localized answer (storeAssessmentAnswer internally localizes)
+      storeAssessmentAnswer(q.id, q.question, answer);
+
+      // Handle language selection for the first question (language names are canonical English)
       if (currentQuestion === 0) {
         sessionStorage.setItem('jennifer_language', answer);
-        // Change the application language based on selection
         changeLanguage(answer);
       }
+    } else {
+      // Mark selection of Other waiting for free text
+      const updatedAnswers = new Map(answers);
+      updatedAnswers.set(q.id, '');
+      setAnswers(updatedAnswers);
     }
   };
 
   const handleOtherTextChange = (text: string) => {
     setOtherText(text);
+    const q = assessmentQuestions[currentQuestion];
     if (selectedAnswer === 'Other' && text.trim()) {
+      const trimmed = text.trim();
       const updatedAnswers = new Map(answers);
-      updatedAnswers.set(assessmentQuestions[currentQuestion].id, text.trim());
+      updatedAnswers.set(q.id, trimmed);
       setAnswers(updatedAnswers);
-      
-      // Store in session storage
-      storeAssessmentAnswer(
-        assessmentQuestions[currentQuestion].id,
-        assessmentQuestions[currentQuestion].question,
-        text.trim()
-      );
+      storeAssessmentAnswer(q.id, q.question, trimmed, { freeText: true });
     }
   };
 
   const handleCountrySelect = (country: string) => {
     setSelectedAnswer(country);
+    const q = assessmentQuestions[currentQuestion];
     const updatedAnswers = new Map(answers);
-    updatedAnswers.set(assessmentQuestions[currentQuestion].id, country);
+    updatedAnswers.set(q.id, country);
     setAnswers(updatedAnswers);
-    
-    // Store in session storage
-    storeAssessmentAnswer(
-      assessmentQuestions[currentQuestion].id,
-      assessmentQuestions[currentQuestion].question,
-      country
-    );
+    storeAssessmentAnswer(q.id, q.question, country); // country stored canonical english inside function
   };
 
   const handleNext = () => {

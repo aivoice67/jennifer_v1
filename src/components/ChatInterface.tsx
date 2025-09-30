@@ -4,7 +4,7 @@ import { Play, Pause, Globe } from 'lucide-react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { useTranslation } from 'react-i18next';
 import { getChatResponse, ChatMessage } from '@/services/api';
-import { getStoredAssessment } from '@/data/assessmentQuestions';
+import { getStoredAssessment, storeAssessmentAnswer } from '@/data/assessmentQuestions';
 import { getEmergencyNumber } from '@/data/emergencyNumbers';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -321,7 +321,11 @@ const ChatInterface = () => {
     setLanguage(newLanguage);
     setDetectedLanguage(languageMap[newLanguage as keyof typeof languageMap] || 'en-US');
     sessionStorage.setItem('jennifer_language', newLanguage);
+    // changeLanguage triggers relocalization via LanguageContext
     await changeLanguage(newLanguage);
+  // Also update the stored answer for question 1 to reflect newly selected language
+  // Question 1 id is 1; storeAssessmentAnswer will localize answer text
+  storeAssessmentAnswer(1, 'What language do you want to proceed in?', newLanguage);
   };
 
   // Destroy WaveSurfer instances on unmount
