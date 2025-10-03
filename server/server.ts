@@ -11,7 +11,9 @@ import { generateTTS, callOpenAIChat, buildSystemPrompt, firstMessageTemplate, C
 // ================== APP INIT ==================
 
 const app = express();
-app.use(express.json({ limit: '2mb' }));
+// Increase body size limits to accommodate larger payloads (e.g., base64 audio)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cors());
 
 // Serve Vite build in production OR attach Vite middleware in dev so we use ONE port

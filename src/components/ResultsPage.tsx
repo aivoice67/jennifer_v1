@@ -38,77 +38,67 @@ const ResultsPage = () => {
 
   const generatePDF = () => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const maxLineWidth = pageWidth - margin * 2;
     let yPosition = 20;
-    
+
     // Title
     doc.setFontSize(20);
-    doc.text('Jennifer AI Therapy Session Report', 20, yPosition);
+    doc.text('Jennifer AI Therapy Session Report', margin, yPosition);
     yPosition += 20;
-    
+
     // Date
     doc.setFontSize(12);
-    doc.text(`Session Date: ${new Date().toLocaleDateString()}`, 20, yPosition);
+    doc.text(`Session Date: ${new Date().toLocaleDateString()}`, margin, yPosition);
     yPosition += 20;
-    
+
     // Assessment Results
     doc.setFontSize(16);
-    doc.text('Assessment Results', 20, yPosition);
+    doc.text('Assessment Results', margin, yPosition);
     yPosition += 10;
-    
-    doc.setFontSize(10);
+
+    doc.setFontSize(11);
     assessmentAnswers.forEach((answer) => {
-      if (yPosition > 250) {
+      if (yPosition > 270) {
         doc.addPage();
         yPosition = 20;
       }
-      
-      doc.text(`Q: ${answer.question}`, 20, yPosition);
-      yPosition += 7;
-      doc.text(`A: ${answer.answer}`, 20, yPosition);
-      yPosition += 15;
+
+      let questionText = doc.splitTextToSize(`Q: ${answer.question}`, maxLineWidth);
+      doc.text(questionText, margin, yPosition);
+      yPosition += questionText.length * 6;
+
+      let answerText = doc.splitTextToSize(`A: ${answer.answer}`, maxLineWidth);
+      doc.text(answerText, margin, yPosition);
+      yPosition += answerText.length * 6 + 8;
     });
-    
-    // Insights Summary
-    if (insightsSummary) {
-      if (yPosition > 200) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      doc.setFontSize(16);
-      doc.text('Insights Summary', 20, yPosition);
-      yPosition += 10;
-      
-      doc.setFontSize(10);
-      const splitSummary = doc.splitTextToSize(insightsSummary, 170);
-      doc.text(splitSummary, 20, yPosition);
-      yPosition += splitSummary.length * 7 + 20;
-    }
-    
+
     // Transcript
     if (conversationHistory.length > 0) {
-      if (yPosition > 200) {
+      if (yPosition > 230) {
         doc.addPage();
         yPosition = 20;
       }
-      
+
       doc.setFontSize(16);
-      doc.text('Conversation Transcript', 20, yPosition);
-      yPosition += 10;
-      
-      doc.setFontSize(10);
+      doc.text('Conversation Transcript', margin, yPosition);
+      yPosition += 12;
+
+      doc.setFontSize(11);
       conversationHistory.forEach((message) => {
-        if (yPosition > 250) {
+        if (yPosition > 270) {
           doc.addPage();
           yPosition = 20;
         }
-        
+
         const speaker = message.role === 'user' ? 'You:' : 'Therapist:';
-        doc.text(`${speaker} ${message.content}`, 20, yPosition);
-        yPosition += 10;
+        const wrappedText = doc.splitTextToSize(`${speaker} ${message.content}`, maxLineWidth);
+        doc.text(wrappedText, margin, yPosition);
+        yPosition += wrappedText.length * 6 + 4;
       });
     }
-    
+
     doc.save('jennifer-therapy-session-report.pdf');
   };
 
@@ -151,25 +141,10 @@ const ResultsPage = () => {
         </table>
 
         {/* Generate Insights Button */}
-        <div className="text-center mt-2">
-          <button
-            onClick={handleGenerateInsights}
-            disabled={isGeneratingInsights}
-            className="bg-white px-4 py-2 rounded-lg shadow-md border border-gray-300 hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {isGeneratingInsights ? t('common.loading') : t('results.recommendations')}
-          </button>
+        <div className="text-center mt-25">
+          
+          
         </div>
-
-        {/* Insights Summary */}
-        {insightsSummary && (
-          <div className="mt-6 p-4 border-t border-gray-400 bg-white/70 rounded-md">
-            <h2 className="font-bold text-xl text-teal-900 mb-3">{t('results.summary')}</h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-              {insightsSummary}
-            </p>
-          </div>
-        )}
 
         {/* Transcript Section */}
         {conversationHistory.length > 0 && (
@@ -178,7 +153,7 @@ const ResultsPage = () => {
             <div className="mt-2 max-h-60 overflow-y-auto pr-2">
               {conversationHistory.map((message, index) => (
                 <p key={index} className="mt-1 text-sm text-gray-800">
-                  <strong>{message.role === 'user' ? t('common.you') ?? 'You' : t('common.therapist') ?? 'Therapist'}:</strong>{' '}
+                  <strong>{message.role === 'user' ? t('you') ?? 'You' : t('therapist') ?? 'Therapist'}:</strong>{' '}
                   {message.content}
                 </p>
               ))}
