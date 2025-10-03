@@ -35,7 +35,7 @@ const ChatInterface = () => {
     browserSupportsSpeechRecognition
   } = useSpeechRecognition();
 
-  // Language detection mapping
+  // Language mapping from UI language to SpeechRecognition locale
   const languageMap = {
     'English': 'en-US',
     'French': 'fr-FR', 
@@ -43,31 +43,11 @@ const ChatInterface = () => {
     'Hindi': 'hi-IN'
   };
 
-  const detectLanguageFromText = (text: string): string => {
-    // Simple language detection based on common words/patterns
-    const englishWords = /\b(the|and|is|in|to|of|a|that|it|with|for|as|was|on|are|you|this|be|at|by|not|or|from|they|we|have|an|had|but|what|can|said|there|use|your|how|our|out|if|up|time|them)\b/gi;
-    const frenchWords = /\b(le|la|et|de|un|une|est|dans|pour|que|avec|sur|par|sont|vous|ce|être|à|ne|se|il|elle|nous|tout|mais|plus|même|leur|bien|où|comme)\b/gi;
-    const spanishWords = /\b(el|la|de|que|y|a|en|un|es|se|no|te|lo|le|da|su|por|son|con|para|al|del|los|las|me|muy|todo|pero|más|hacer|uno|sobre|mi|antes|tanto)\b/gi;
-    const hindiWords = /[\u0900-\u097F]+/g; // Devanagari script
-
-    const englishMatches = (text.match(englishWords) || []).length;
-    const frenchMatches = (text.match(frenchWords) || []).length;
-    const spanishMatches = (text.match(spanishWords) || []).length;
-    const hindiMatches = (text.match(hindiWords) || []).length;
-
-    const maxMatches = Math.max(englishMatches, frenchMatches, spanishMatches, hindiMatches);
-    
-    if (hindiMatches === maxMatches && hindiMatches > 0) return 'hi-IN';
-    if (frenchMatches === maxMatches && frenchMatches > 0) return 'fr-FR';
-    if (spanishMatches === maxMatches && spanishMatches > 0) return 'es-ES';
-    return 'en-US'; // Default to English
-  };
-
   useEffect(() => {
     // Load language from session storage
     const storedLanguage = sessionStorage.getItem('jennifer_language') || 'English';
-    setLanguage(storedLanguage);
-    setDetectedLanguage(languageMap[storedLanguage as keyof typeof languageMap] || 'en-US');
+  setLanguage(storedLanguage);
+  setDetectedLanguage(languageMap[storedLanguage as keyof typeof languageMap] || 'en-US');
 
     // Load conversation history
     const storedConversation = sessionStorage.getItem('jennifer_conversation');
@@ -144,6 +124,7 @@ const ChatInterface = () => {
       mediaRecorder.start(1000);
 
       resetTranscript();
+  // Use the user's selected language for recognition so transcription is in that language.
       SpeechRecognition.startListening({
         continuous: true,
         language: detectedLanguage,
@@ -165,15 +146,12 @@ const ChatInterface = () => {
 
       setTimeout(async () => {
         if (transcript && transcript.trim()) {
-          const detectedLang = detectLanguageFromText(transcript);
-          setDetectedLanguage(detectedLang);
-          
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
           const reader = new FileReader();
           reader.readAsDataURL(audioBlob);
           reader.onloadend = async () => {
             const base64Audio = reader.result as string;
-            await sendMessage(transcript, base64Audio, detectedLang);
+            await sendMessage(transcript, base64Audio, detectedLanguage);
           };
         }
       }, 500);
@@ -240,7 +218,6 @@ const ChatInterface = () => {
       barWidth: 2,
       barRadius: 2,
       barGap: 1,
-      responsive: true,
       normalize: true,
     });
     const src = audioData.startsWith('data:') ? audioData : `data:audio/mp3;base64,${audioData}`;
@@ -327,6 +304,13 @@ const ChatInterface = () => {
   // Question 1 id is 1; storeAssessmentAnswer will localize answer text
   storeAssessmentAnswer(1, 'What language do you want to proceed in?', newLanguage);
   };
+
+  // Keep recognition language in sync with context language too
+  useEffect(() => {
+    if (currentLanguage) {
+      setDetectedLanguage(languageMap[currentLanguage as keyof typeof languageMap] || 'en-US');
+    }
+  }, [currentLanguage]);
 
   // Destroy WaveSurfer instances on unmount
   useEffect(() => {
