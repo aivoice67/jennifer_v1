@@ -40,9 +40,21 @@ if (!OPENAI_API_KEY) console.warn('[warn] OPENAI_API_KEY not set. Calls will fai
 if (!ELEVENLABS_API_KEY) console.warn('[warn] ELEVENLABS_API_KEY not set. TTS calls will fail.');
 
 // ================== TEXT TO SPEECH ==================
+const languageMap: Record<string, string> = {
+  english: "en",
+  hindi: "hi",
+  spanish: "es",
+  french: "fr",
+};
 export async function generateTTS(text: string, _language: string): Promise<string> {
+  const langCode = languageMap[_language.toLowerCase()] || "en"; 
+  console.log('*****************************************************************************');
+  console.log('ElevenLabs TTS language Input:', _language, 'Mapped to:', langCode);
+  console.log('*****************************************************************************');
   const payload = {
     text,
+    model_id: "eleven_multilingual_v2", 
+    language_code: langCode,
     voice_settings: { stability: 0.75, similarity_boost: 0.75, speed: 0.93 }
   };
   // Try primary then secondary ElevenLabs key
@@ -55,7 +67,6 @@ export async function generateTTS(text: string, _language: string): Promise<stri
     });
   }
   let resp = await callEleven(ELEVENLABS_API_KEY);
-  if (!resp || !resp.ok) resp = await callEleven(ELEVENLABS2_API_KEY);
   if (!resp || !resp.ok) throw new Error(`ElevenLabs TTS Error: ${resp ? await resp.text() : 'No response'}`);
   const audioBuffer = Buffer.from(await resp.arrayBuffer());
   return audioBuffer.toString('base64');
@@ -65,9 +76,19 @@ export async function callOpenAIChat(systemPrompt: string, userPrompt: string, h
   const messages: any[] = [{ role: 'system', content: systemPrompt }];
   if (history) history.forEach(m => messages.push({ role: m.role, content: m.content }));
   messages.push({ role: 'user', content: userPrompt });
+
+  console.log('------------------openai input------------------');
+  console.log('OpenAI Messages:', messages);
+  console.log('------------------openai input------------------');
+
   const resp = await fetch(OPENAI_URL, { method: 'POST', headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o-mini', messages }) });
   if (!resp.ok) throw new Error(`OpenAI Error: ${await resp.text()}`);
   const data: any = await resp.json();
+
+  console.log('------------------openai OUTPUT------------------');
+  console.log('OpenAI Output:', data.choices?.[0]?.message?.content);
+  console.log('------------------openai OUTPUT------------------');
+
   return data.choices?.[0]?.message?.content || '';
 }
 
@@ -109,7 +130,7 @@ export function firstMessageTemplate(language: string, feeling: string) {
     english: `Hi, I am Jennifer your AI Therapist. I see you're feeling ${feeling}. Can you tell me more about that?`,
     spanish: `Hola, soy Jennifer, tu Terapeuta de IA. Veo que te sientes ${feeling}. ¿Puedes contarme más sobre eso?`,
     french: `Bonjour, je suis Jennifer, votre Thérapeute IA. Je vois que vous vous sentez ${feeling}. Pouvez-vous m'en dire plus à ce sujet?`,
-    hindi: `नमस्ते, मैं जेनिफर हूं, आपकी एआई थेरेपिस्ट। मैं देख रही हूं कि आप ${feeling} महसूस कर रहे हैं। क्या आप मुझे इसके बारे में और बता सकते हैं?`
+    hindi: `Namaste, main Jennifer hoon, aapki AI therapist. Aap ne kaha ki aapko ${feeling} mehsoos ho raha hai. Kya aap mujhe iske baare mein aur bata sakte hain?`
   };
   return templates[language.toLowerCase()] || templates.english;
 }
