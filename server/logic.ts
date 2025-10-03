@@ -66,9 +66,11 @@ export async function generateTTS(text: string, _language: string): Promise<stri
       body: JSON.stringify(payload)
     });
   }
+  
   let resp = await callEleven(ELEVENLABS_API_KEY);
   if (!resp || !resp.ok) throw new Error(`ElevenLabs TTS Error: ${resp ? await resp.text() : 'No response'}`);
   const audioBuffer = Buffer.from(await resp.arrayBuffer());
+  console.log('ElevenLabs TTS Success: Audio buffer size', audioBuffer.length);
   return audioBuffer.toString('base64');
 }
 
