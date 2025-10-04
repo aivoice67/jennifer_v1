@@ -94,6 +94,34 @@ export async function callOpenAIChat(systemPrompt: string, userPrompt: string, h
   return data.choices?.[0]?.message?.content || '';
 }
 
+// Convert a Hindi (Devanagari) transcript to Hinglish (Roman Hindi) while preserving
+// the exact line structure and speaker labels 'You:' and 'Therapist:'.
+export async function convertHindiToHinglish(fullTranscript: string): Promise<string> {
+  if (!fullTranscript || !fullTranscript.trim()) return '';
+  const systemPrompt = [
+    'You are a precise transliterator. Convert Hindi written in Devanagari script into Hinglish (Roman Hindi).',
+    "Do not translate into English words; only transliterate sounds into Latin characters.",
+    "Preserve the exact line breaks and the speaker labels 'You:' and 'Therapist:' exactly as they appear.",
+    'If a line is already in Latin script, leave that portion as-is.',
+    'Output only the transliterated transcript without any extra commentary or code fences.'
+  ].join(' ');
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: fullTranscript }
+  ];
+
+  const resp = await fetch(OPENAI_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'gpt-4o-mini', messages })
+  });
+  if (!resp.ok) throw new Error(`OpenAI Hinglish Error: ${await resp.text()}`);
+  const data: any = await resp.json();
+  const text = data.choices?.[0]?.message?.content || '';
+  return (text || '').trim();
+}
+
 export function buildSystemPrompt(language: string, assessments: AssessmentAnswer[]): string {
   const lower = language.toLowerCase();
   const prompts: Record<string, any> = {

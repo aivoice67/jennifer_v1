@@ -3,7 +3,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import cors from 'cors';
-import { generateTTS, callOpenAIChat, buildSystemPrompt, firstMessageTemplate, ChatMessage, AssessmentAnswer, GetChatResponseParams, ChatResponse, InsightsRequest, InsightsResponse } from './logic.js';
+import { generateTTS, callOpenAIChat, buildSystemPrompt, firstMessageTemplate, ChatMessage, AssessmentAnswer, GetChatResponseParams, ChatResponse, InsightsRequest, InsightsResponse, convertHindiToHinglish } from './logic.js';
 
 // ================== CONFIG ==================
 // All config & warnings handled in logic.ts
@@ -93,6 +93,21 @@ app.post('/api/insights', async (req: Request, res: Response) => {
     return res.json(payload);
   } catch (err: any) {
     console.error('insights route error', err);
+    return res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// Convert Hindi transcript (Devanagari) to Hinglish (Roman Hindi) preserving 'You:' and 'Therapist:' blocks
+app.post('/api/hinglish', async (req: Request, res: Response) => {
+  try {
+    const { transcript } = req.body as { transcript?: string };
+    if (!transcript || typeof transcript !== 'string') {
+      return res.status(400).json({ error: 'Invalid transcript' });
+    }
+    const output = await convertHindiToHinglish(transcript);
+    return res.json({ transcript: output });
+  } catch (err: any) {
+    console.error('hinglish route error', err);
     return res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 });

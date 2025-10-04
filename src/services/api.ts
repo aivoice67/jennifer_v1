@@ -64,3 +64,15 @@ export const generateInsightsSummary = async (
     return "Based on your assessment and our conversation, I can see that you're taking important steps toward understanding yourself better. Your responses indicate areas of both challenge and strength that we can continue to explore in future sessions.";
   }
 };
+
+// Convert a full transcript to Hinglish (Roman Hindi) via server API
+export const convertTranscriptToHinglish = async (transcript: string): Promise<string> => {
+  try {
+    const response = await axios.post(`/api/hinglish`, { transcript });
+    return response.data.transcript as string;
+  } catch (error) {
+    console.error('Hinglish API error:', error);
+    // On failure, fall back to the original transcript
+    return transcript;
+  }
+};
