@@ -53,8 +53,8 @@ export async function generateTTS(text: string, _language: string): Promise<stri
   console.log('*****************************************************************************');
   const payload = {
     text,
-    model_id: "eleven_multilingual_v2", 
-    language_code: langCode,
+    // model_id: "eleven_multilingual_v2", 
+    // language_code: langCode,
     voice_settings: { stability: 0.75, similarity_boost: 0.75, speed: 0.93 }
   };
   // Try primary then secondary ElevenLabs key
