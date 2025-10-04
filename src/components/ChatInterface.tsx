@@ -40,7 +40,7 @@ const ChatInterface = () => {
     'English': 'en-US',
     'French': 'fr-FR', 
     'Spanish': 'es-ES',
-    'Hindi': 'en-IN'
+    'Hindi': 'hi-IN'
   };
 
   useEffect(() => {
