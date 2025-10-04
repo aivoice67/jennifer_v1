@@ -13,12 +13,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
-      if (stored === "1") setIsAuthenticated(true);
-    } catch (_) {
-      // ignore storage errors
-    }
+    // After a hard refresh, we clear sessionStorage in main.tsx, so start unauthenticated.
+    // This effect remains for safety if main.tsx logic changes; do not auto-login from stale flags.
+    setIsAuthenticated(false);
   }, []);
 
   const login = (pin: string) => {
