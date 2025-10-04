@@ -9,6 +9,8 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+  // Safety: ensure session is clean when landing on login
+  try { sessionStorage.clear(); } catch {}
     if (isAuthenticated) navigate("/", { replace: true });
   }, [isAuthenticated, navigate]);
 
