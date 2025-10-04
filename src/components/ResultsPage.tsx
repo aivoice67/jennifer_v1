@@ -3,15 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import jsPDF from 'jspdf';
 import { getStoredAssessment, clearAssessment, AssessmentAnswer } from '@/data/assessmentQuestions';
-import { ChatMessage, generateInsightsSummary } from '@/services/api';
+import { ChatMessage, generateInsightsSummary, convertTranscriptToHinglish } from '@/services/api';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ResultsPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { currentLanguageCode } = useLanguage();
   const [assessmentAnswers, setAssessmentAnswers] = useState<AssessmentAnswer[]>([]);
   const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>([]);
   const [insightsSummary, setInsightsSummary] = useState<string>('');
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [hinglishTranscript, setHinglishTranscript] = useState<string | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
+
+  // Sanitize a single line for PDF rendering to avoid unwanted spacing/hidden characters
+  const sanitizeLine = (input: string): string => {
+    if (!input) return '';
+    // Remove zero-width characters and BOM/NO-BREAK SPACE
+    const withoutHidden = input.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ' ');
+    // Normalize unicode and collapse excessive whitespace
+    const normalized = withoutHidden.normalize('NFKC').replace(/\s+/g, ' ').trim();
+    return normalized;
+  };
 
   useEffect(() => {
     // Load data from session storage
@@ -23,6 +38,28 @@ const ResultsPage = () => {
       setConversationHistory(JSON.parse(conversation));
     }
   }, []);
+
+  // When language is Hindi and we have a conversation, build a single transcript preserving labels
+  // and request Hinglish conversion only for on-screen display.
+  useEffect(() => {
+    const shouldConvert = currentLanguageCode === 'hi' && conversationHistory.length > 0;
+    if (!shouldConvert) {
+      setHinglishTranscript(null);
+      return;
+    }
+    // Build transcript string with exact labels 'You:' and 'Therapist:'
+    const full = conversationHistory
+      .map(m => `${m.role === 'user' ? 'You:' : 'Therapist:'} ${m.content}`)
+      .join('\n');
+    setIsConverting(true);
+    convertTranscriptToHinglish(full)
+      .then(setHinglishTranscript)
+      .catch(err => {
+        console.error('Hinglish conversion failed:', err);
+        setHinglishTranscript(null);
+      })
+      .finally(() => setIsConverting(false));
+  }, [currentLanguageCode, conversationHistory]);
 
   const handleGenerateInsights = async () => {
     setIsGeneratingInsights(true);
@@ -36,7 +73,7 @@ const ResultsPage = () => {
     setIsGeneratingInsights(false);
   };
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 20;
@@ -86,17 +123,58 @@ const ResultsPage = () => {
       yPosition += 12;
 
       doc.setFontSize(11);
-      conversationHistory.forEach((message) => {
-        if (yPosition > 270) {
-          doc.addPage();
-          yPosition = 20;
+
+      if (currentLanguageCode === 'hi') {
+        // Ensure we have a Hinglish transcript for PDF
+        let pdfTranscript = hinglishTranscript;
+        if (!pdfTranscript) {
+          try {
+            const full = conversationHistory
+              .map(m => `${m.role === 'user' ? 'You:' : 'Therapist:'} ${m.content}`)
+              .join('\n');
+            pdfTranscript = await convertTranscriptToHinglish(full);
+          } catch (e) {
+            console.error('Hinglish conversion for PDF failed:', e);
+          }
         }
 
-        const speaker = message.role === 'user' ? 'You:' : 'Therapist:';
-        const wrappedText = doc.splitTextToSize(`${speaker} ${message.content}`, maxLineWidth);
-        doc.text(wrappedText, margin, yPosition);
-        yPosition += wrappedText.length * 6 + 4;
-      });
+        if (pdfTranscript) {
+          const lines = pdfTranscript.split(/\r?\n/).map(sanitizeLine);
+          for (const line of lines) {
+            if (yPosition > 270) {
+              doc.addPage();
+              yPosition = 20;
+            }
+            const wrapped = doc.splitTextToSize(line, maxLineWidth);
+            doc.text(wrapped, margin, yPosition);
+            yPosition += wrapped.length * 6 + 4;
+          }
+        } else {
+          // Fallback to original if conversion not available
+          conversationHistory.forEach((message) => {
+            if (yPosition > 270) {
+              doc.addPage();
+              yPosition = 20;
+            }
+            const speaker = message.role === 'user' ? 'You:' : 'Therapist:';
+            const wrappedText = doc.splitTextToSize(sanitizeLine(`${speaker} ${message.content}`), maxLineWidth);
+            doc.text(wrappedText, margin, yPosition);
+            yPosition += wrappedText.length * 6 + 4;
+          });
+        }
+      } else {
+        // Non-Hindi: original per-message transcript
+        conversationHistory.forEach((message) => {
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          const speaker = message.role === 'user' ? 'You:' : 'Therapist:';
+          const wrappedText = doc.splitTextToSize(sanitizeLine(`${speaker} ${message.content}`), maxLineWidth);
+          doc.text(wrappedText, margin, yPosition);
+          yPosition += wrappedText.length * 6 + 4;
+        });
+      }
     }
 
     doc.save('jennifer-therapy-session-report.pdf');
@@ -150,13 +228,43 @@ const ResultsPage = () => {
         {conversationHistory.length > 0 && (
           <div className="mt-6 p-4 border-t border-gray-400">
             <h2 className="font-bold text-xl text-teal-900">Transcript</h2>
-            <div className="mt-2 max-h-60 overflow-y-auto pr-2">
-              {conversationHistory.map((message, index) => (
-                <p key={index} className="mt-1 text-sm text-gray-800">
-                  <strong>{message.role === 'user' ? t('you') ?? 'You' : t('therapist') ?? 'Therapist'}:</strong>{' '}
-                  {message.content}
-                </p>
-              ))}
+            <div className="mt-2 max-h-60 overflow-y-auto pr-2 whitespace-pre-wrap text-sm text-gray-800">
+              {currentLanguageCode === 'hi' ? (
+                // For Hindi: show loader while converting; show Hinglish when ready; otherwise fallback to original
+                isConverting ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-4/5" />
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-4 w-1/3" />
+                  </div>
+                ) : (
+                  hinglishTranscript !== null ? (
+                    <>{hinglishTranscript}</>
+                  ) : (
+                    <>
+                      {conversationHistory.map((message, index) => (
+                        <p key={index} className="mt-1">
+                          <strong>{message.role === 'user' ? t('you') ?? 'You' : t('therapist') ?? 'Therapist'}:</strong>{' '}
+                          {message.content}
+                        </p>
+                      ))}
+                    </>
+                  )
+                )
+              ) : (
+                // Non-Hindi: original behavior
+                <>
+                  {conversationHistory.map((message, index) => (
+                    <p key={index} className="mt-1">
+                      <strong>{message.role === 'user' ? t('you') ?? 'You' : t('therapist') ?? 'Therapist'}:</strong>{' '}
+                      {message.content}
+                    </p>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         )}
