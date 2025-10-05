@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import jsPDF from 'jspdf';
@@ -18,7 +18,6 @@ const ResultsPage = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [displayMode, setDisplayMode] = useState<'devanagari' | 'hinglish'>('devanagari');
   const [devanagariTranscript, setDevanagariTranscript] = useState<string>('');
-  const devanagariFontLoadedRef = useRef<boolean>(false);
 
   // Sanitize a single line for PDF rendering to avoid unwanted spacing/hidden characters
   const sanitizeLine = (input: string): string => {
@@ -106,41 +105,8 @@ const ResultsPage = () => {
     setIsGeneratingInsights(false);
   };
 
-  // Ensure a Devanagari-capable font is available in jsPDF; attempt local then multiple CDNs
-  const ensureDevanagariFont = async (doc: jsPDF) => {
-    if (devanagariFontLoadedRef.current) return;
-    const candidates: Array<{ url: string; vfsName: string; family: string }> = [
-      // Local preferred
-      { url: '/fonts/NotoSansDevanagari-Regular.ttf', vfsName: 'NotoSansDevanagari-Regular.ttf', family: 'NotoSansDevanagari' },
-      { url: '/fonts/Hind-Regular.ttf', vfsName: 'Hind-Regular.ttf', family: 'Hind' },
-      // Raw GitHub (often CORS-allowed)
-      { url: 'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf', vfsName: 'NotoSansDevanagari-Regular.ttf', family: 'NotoSansDevanagari' },
-      { url: 'https://raw.githubusercontent.com/itfoundry/hind/master/fonts/ttf/Hind-Regular.ttf', vfsName: 'Hind-Regular.ttf', family: 'Hind' },
-    ];
-    for (const cand of candidates) {
-      try {
-        const res = await fetch(cand.url, { mode: 'cors' });
-        if (!res.ok) continue;
-        const buf = await res.arrayBuffer();
-        // Convert to base64 via DataURL for safety
-        const dataUrl: string = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(new Blob([buf], { type: 'font/ttf' }));
-        });
-        const b64 = dataUrl.split(',')[1];
-        // Register font with jsPDF
-        doc.addFileToVFS(cand.vfsName, b64);
-        doc.addFont(cand.vfsName, cand.family, 'normal');
-        // Use this family name consistently when setting the font
-        devanagariFontLoadedRef.current = true;
-        return;
-      } catch (e) {
-        console.warn('Failed to load Devanagari font from', cand.url, e);
-      }
-    }
-  };
+  // Note: jsPDF doesn't shape complex scripts like Devanagari reliably.
+  // We'll render Devanagari transcript via canvas images for correctness.
 
   const generatePDF = async () => {
     const doc = new jsPDF();
@@ -218,138 +184,136 @@ const ResultsPage = () => {
             }
           }
         } else {
-          // Devanagari view: ensure Unicode-capable font is loaded
-          await ensureDevanagariFont(doc);
-          if (devanagariFontLoadedRef.current) {
-            // Try both commonly loaded families in case of fallback registration
-            try { doc.setFont('NotoSansDevanagari', 'normal'); } catch { try { doc.setFont('Hind', 'normal'); } catch {}
-            }
-            const lines = devanagariTranscript.split(/\r?\n/).map(sanitizeLine);
-            for (const line of lines) {
-              if (yPosition > 270) {
-                doc.addPage();
-                yPosition = 20;
-              }
-              const wrapped = doc.splitTextToSize(line, maxLineWidth);
-              doc.text(wrapped, margin, yPosition);
-              yPosition += wrapped.length * 6 + 4;
-            }
-          } else {
-            // Fallback: render Devanagari via canvas to ensure proper glyph shaping and decoding
-            const renderDevanagariTranscriptAsImages = async () => {
-              const pageHeight = doc.internal.pageSize.getHeight();
-              const pxPerMm = 96 / 25.4; // approximate CSS px per mm at 96 DPI
-              const contentWidthMm = pageWidth - margin * 2;
-              const contentWidthPx = Math.round(contentWidthMm * pxPerMm);
-              const contentHeightMm = pageHeight - margin * 2;
-              const contentHeightPx = Math.round(contentHeightMm * pxPerMm);
+          // Devanagari view: render via canvas images to preserve glyph shaping
+          const renderDevanagariTranscriptAsImages = async () => {
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const pxPerMm = 96 / 25.4; // approximate CSS px per mm at 96 DPI
+            const contentWidthMm = pageWidth - margin * 2;
+            const contentWidthPx = Math.round(contentWidthMm * pxPerMm);
+            const fullContentHeightMm = pageHeight - margin * 2;
+            const fullContentHeightPx = Math.round(fullContentHeightMm * pxPerMm);
 
-              // Word wrap helper respecting spaces; fallback to character wrap if no spaces
-              const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
-                const words = text.split(/\s+/);
-                const lines: string[] = [];
-                if (words.length === 0) return lines;
-                let line = words[0] || '';
-                for (let i = 1; i < words.length; i++) {
-                  const testLine = line + ' ' + words[i];
-                  if (ctx.measureText(testLine).width <= maxWidth) {
-                    line = testLine;
-                  } else {
-                    // If a single word is longer than maxWidth, break by characters
-                    if (ctx.measureText(words[i]).width > maxWidth) {
-                      lines.push(line);
-                      let remainder = words[i];
-                      while (ctx.measureText(remainder).width > maxWidth && remainder.length > 0) {
-                        let cut = 1;
-                        while (cut < remainder.length && ctx.measureText(remainder.slice(0, cut)).width <= maxWidth) {
-                          cut++;
-                        }
-                        lines.push(remainder.slice(0, cut - 1));
-                        remainder = remainder.slice(cut - 1);
+            // Word wrap helper respecting spaces; fallback to character wrap if no spaces
+            const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
+              const words = text.split(/\s+/);
+              const lines: string[] = [];
+              if (words.length === 0) return lines;
+              let line = words[0] || '';
+              for (let i = 1; i < words.length; i++) {
+                const testLine = line + ' ' + words[i];
+                if (ctx.measureText(testLine).width <= maxWidth) {
+                  line = testLine;
+                } else {
+                  // If a single word is longer than maxWidth, break by characters
+                  if (ctx.measureText(words[i]).width > maxWidth) {
+                    lines.push(line);
+                    let remainder = words[i];
+                    while (ctx.measureText(remainder).width > maxWidth && remainder.length > 0) {
+                      let cut = 1;
+                      while (cut < remainder.length && ctx.measureText(remainder.slice(0, cut)).width <= maxWidth) {
+                        cut++;
                       }
-                      line = remainder;
-                    } else {
-                      lines.push(line);
-                      line = words[i];
+                      lines.push(remainder.slice(0, cut - 1));
+                      remainder = remainder.slice(cut - 1);
                     }
+                    line = remainder;
+                  } else {
+                    lines.push(line);
+                    line = words[i];
                   }
                 }
-                lines.push(line);
-                return lines;
-              };
-
-              // Prepare transcript lines
-              const rawLines = devanagariTranscript.split(/\r?\n/).map(sanitizeLine);
-              const fontPx = 16;
-              const lineHeightPx = Math.round(fontPx * 1.4);
-              const fontFamily = 'Noto Sans Devanagari, Mangal, Nirmala UI, Devanagari Sangam MN, sans-serif';
-
-              // Start transcript on a fresh page to avoid overlap with previous content block
-              doc.addPage();
-
-              let yPx = 0;
-              let canvas = document.createElement('canvas');
-              canvas.width = contentWidthPx;
-              canvas.height = contentHeightPx;
-              let ctx = canvas.getContext('2d');
-              if (!ctx) return;
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.fillStyle = '#000000';
-              ctx.font = `${fontPx}px ${fontFamily}`;
-              ctx.textBaseline = 'top';
-
-              const flushPage = () => {
-                const dataUrl = canvas.toDataURL('image/png');
-                const imgHeightMm = canvas.height / pxPerMm;
-                doc.addImage(dataUrl, 'PNG', margin, margin, contentWidthMm, imgHeightMm);
-                // Prepare next page canvas
-                doc.addPage();
-                canvas = document.createElement('canvas');
-                canvas.width = contentWidthPx;
-                canvas.height = contentHeightPx;
-                ctx = canvas.getContext('2d');
-                if (!ctx) return;
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#000000';
-                ctx.font = `${fontPx}px ${fontFamily}`;
-                ctx.textBaseline = 'top';
-                yPx = 0;
-              };
-
-              for (const raw of rawLines) {
-                const wrapped = wrapText(ctx, raw, contentWidthPx);
-                for (const ln of wrapped) {
-                  if (yPx + lineHeightPx > contentHeightPx) {
-                    flushPage();
-                  }
-                  ctx.fillText(ln, 0, yPx);
-                  yPx += lineHeightPx;
-                }
-                // Add a small gap between transcript lines
-                yPx += Math.round(lineHeightPx * 0.2);
               }
-              // Flush the last partial page without adding an extra blank page
-              if (yPx > 0) {
-                const usedHeightPx = Math.max(yPx, 1);
-                const finalCanvas = document.createElement('canvas');
-                finalCanvas.width = contentWidthPx;
-                finalCanvas.height = usedHeightPx;
-                const fctx = finalCanvas.getContext('2d');
-                if (!fctx || !ctx) return;
-                fctx.fillStyle = '#ffffff';
-                fctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-                fctx.drawImage(canvas, 0, 0, contentWidthPx, usedHeightPx, 0, 0, contentWidthPx, usedHeightPx);
-                const dataUrl = finalCanvas.toDataURL('image/png');
-                const imgHeightMm = finalCanvas.height / pxPerMm;
-                doc.addImage(dataUrl, 'PNG', margin, margin, contentWidthMm, imgHeightMm);
-              }
+              lines.push(line);
+              return lines;
             };
 
-            console.warn('Falling back to canvas-based rendering for Devanagari PDF transcript.');
-            await renderDevanagariTranscriptAsImages();
-          }
+            // Prepare transcript lines
+            const rawLines = devanagariTranscript.split(/\r?\n/).map(sanitizeLine);
+            const fontPx = 16;
+            const lineHeightPx = Math.round(fontPx * 1.4);
+            const fontFamily = 'Noto Sans Devanagari, Mangal, Nirmala UI, Devanagari Sangam MN, sans-serif';
+
+            // Compute available height on current page after the heading
+            let currentTopMm = yPosition; // use existing yPosition as top
+            let availableHeightMm = Math.max(pageHeight - currentTopMm - margin, 0);
+
+            // If not enough room for even one line, start on a new page
+            const minNeededMm = Math.max((lineHeightPx + Math.round(lineHeightPx * 0.2)) / pxPerMm, 6);
+            if (availableHeightMm < minNeededMm) {
+              doc.addPage();
+              currentTopMm = margin;
+              availableHeightMm = Math.max(pageHeight - currentTopMm - margin, 0);
+            }
+
+            const makeCanvas = (heightPx: number) => {
+              const c = document.createElement('canvas');
+              c.width = contentWidthPx;
+              c.height = heightPx;
+              const cctx = c.getContext('2d');
+              if (!cctx) return { c, cctx } as { c: HTMLCanvasElement; cctx: CanvasRenderingContext2D };
+              cctx.fillStyle = '#ffffff';
+              cctx.fillRect(0, 0, c.width, c.height);
+              cctx.fillStyle = '#000000';
+              cctx.font = `${fontPx}px ${fontFamily}`;
+              cctx.textBaseline = 'top';
+              return { c, cctx } as { c: HTMLCanvasElement; cctx: CanvasRenderingContext2D };
+            };
+
+            let currentHeightPx = Math.round(availableHeightMm * pxPerMm);
+            if (currentHeightPx <= 0) currentHeightPx = Math.round(fullContentHeightPx); // fallback
+            let { c: canvas, cctx: ctx } = makeCanvas(currentHeightPx);
+            if (!ctx) return;
+            let yPx = 0;
+
+            const flushPage = (topMm: number) => {
+              const dataUrl = canvas.toDataURL('image/png');
+              const imgHeightMm = canvas.height / pxPerMm;
+              doc.addImage(dataUrl, 'PNG', margin, topMm, contentWidthMm, imgHeightMm);
+              // Prepare next page canvas
+              doc.addPage();
+              ({ c: canvas, cctx: ctx } = makeCanvas(fullContentHeightPx));
+              if (!ctx) return;
+              yPx = 0;
+              currentTopMm = margin;
+            };
+
+            for (const raw of rawLines) {
+              const wrapped = wrapText(ctx, raw, contentWidthPx);
+              for (const ln of wrapped) {
+                if (yPx + lineHeightPx > canvas.height) {
+                  flushPage(currentTopMm);
+                }
+                ctx.fillText(ln, 0, yPx);
+                yPx += lineHeightPx;
+              }
+              // Add a small gap between transcript lines
+              if (yPx + Math.round(lineHeightPx * 0.2) > canvas.height) {
+                flushPage(currentTopMm);
+              } else {
+                yPx += Math.round(lineHeightPx * 0.2);
+              }
+            }
+
+            // Flush the last partial page without adding an extra blank page
+            if (yPx > 0) {
+              const usedHeightPx = Math.max(yPx, 1);
+              const finalCanvas = document.createElement('canvas');
+              finalCanvas.width = contentWidthPx;
+              finalCanvas.height = usedHeightPx;
+              const fctx = finalCanvas.getContext('2d');
+              if (!fctx || !ctx) return;
+              fctx.fillStyle = '#ffffff';
+              fctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+              fctx.drawImage(canvas, 0, 0, contentWidthPx, usedHeightPx, 0, 0, contentWidthPx, usedHeightPx);
+              const dataUrl = finalCanvas.toDataURL('image/png');
+              const imgHeightMm = finalCanvas.height / pxPerMm;
+              doc.addImage(dataUrl, 'PNG', margin, currentTopMm, contentWidthMm, imgHeightMm);
+              // Update yPosition to end of image in case anything is appended later
+              yPosition = currentTopMm + imgHeightMm + 4;
+            }
+          };
+
+          await renderDevanagariTranscriptAsImages();
         }
       } else {
         // Non-Hindi: original per-message transcript
