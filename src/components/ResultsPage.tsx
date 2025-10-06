@@ -371,7 +371,6 @@ const ResultsPage = () => {
           </tbody>
         </table>
 
-        {/* Generate Insights Button */}
         <div className="text-center mt-25">
           
           
@@ -391,8 +390,8 @@ const ResultsPage = () => {
                   {isTranslating
                     ? 'Translating…'
                     : displayMode === 'devanagari'
-                      ? 'Translate to Hinglish'
-                      : 'Translate to Devanagari'}
+                      ? 'Read in Roman'
+                      : 'Read in Devanagari'}
                 </button>
               )}
             </div>
@@ -408,7 +407,7 @@ const ResultsPage = () => {
                 <>
                   {conversationHistory.map((message, index) => (
                     <p key={index} className="mt-1">
-                      <strong>{message.role === 'user' ? t('you') ?? 'You' : t('therapist') ?? 'Therapist'}:</strong>{' '}
+                      <strong>{message.role === 'user' ? 'You' : 'Therapist'}:</strong>{' '}
                       {message.content}
                     </p>
                   ))}
