@@ -44,8 +44,8 @@ const ResultsPage = () => {
   useEffect(() => {
     if (currentLanguageCode === 'hi' && conversationHistory.length > 0) {
       // Build transcript with localized labels for on-screen Devanagari display
-      const localizedYou = t('you') ?? 'You';
-      const localizedTherapist = t('therapist') ?? 'Therapist';
+      const localizedYou = 'You';
+      const localizedTherapist = 'Therapist';
       const dev = conversationHistory
         .map(m => `${m.role === 'user' ? localizedYou : localizedTherapist}: ${m.content}`)
         .join('\n');
@@ -350,7 +350,7 @@ const ResultsPage = () => {
           <thead>
             <tr className="bg-gray-200">
               <th className="border border-gray-400 px-4 py-2 text-left text-sm font-semibold text-teal-900">
-                {t('assessment.questions')}
+                {t('results.questions')}
               </th>
               <th className="border border-gray-400 px-4 py-2 text-left text-sm font-semibold text-teal-900">
                 {t('results.summary')}

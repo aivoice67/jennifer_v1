@@ -128,6 +128,7 @@
   },
   "results": {
     "title": "Vos résultats d'évaluation",
+    "questions": "Questions",
     "summary": "Résumé de l'évaluation",
     "recommendations": "Recommandations",
     "export_pdf": "Exporter en PDF",
