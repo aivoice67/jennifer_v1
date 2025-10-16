@@ -48,9 +48,7 @@ const languageMap: Record<string, string> = {
 };
 export async function generateTTS(text: string, _language: string): Promise<string> {
   const langCode = languageMap[_language.toLowerCase()] || "en"; 
-  console.log('*****************************************************************************');
-  console.log('ElevenLabs TTS language Input:', _language, 'Mapped to:', langCode);
-  console.log('*****************************************************************************');
+
   const payload = {
     text,
     // model_id: "eleven_multilingual_v2", 
@@ -87,9 +85,6 @@ export async function callOpenAIChat(systemPrompt: string, userPrompt: string, h
   if (!resp.ok) throw new Error(`OpenAI Error: ${await resp.text()}`);
   const data: any = await resp.json();
 
-  console.log('------------------openai OUTPUT------------------');
-  console.log('OpenAI Output:', data.choices?.[0]?.message?.content);
-  console.log('------------------openai OUTPUT------------------');
 
   return data.choices?.[0]?.message?.content || '';
 }
@@ -120,9 +115,6 @@ export async function convertHindiToHinglish(fullTranscript: string): Promise<st
     { role: 'user', content: userPrompt.trim() }
   ];
 
-  console.log('#################################### -- hindi conversion input -- ####################################');
-  console.log('Hinglish conversion input:', messages);
-  console.log('#################################### -- hindi conversion input -- ####################################');
 
   const resp = await fetch(OPENAI_URL, {
     method: 'POST',
@@ -153,9 +145,6 @@ export async function convertHindiToHinglish(fullTranscript: string): Promise<st
   const data = await resp.json() as OpenAIResponse;
   const output = (data.choices?.[0]?.message?.content || '').trim();
 
-  console.log('#################################### hindi conversion output ####################################');
-  console.log('Hinglish conversion OUTPUT:', output);
-  console.log('#################################### hindi conversion output ####################################');
 
   // Return only the transliterated text
   return output;
