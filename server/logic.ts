@@ -68,7 +68,6 @@ export async function generateTTS(text: string, _language: string): Promise<stri
   let resp = await callEleven(ELEVENLABS_API_KEY);
   if (!resp || !resp.ok) throw new Error(`ElevenLabs TTS Error: ${resp ? await resp.text() : 'No response'}`);
   const audioBuffer = Buffer.from(await resp.arrayBuffer());
-  console.log('ElevenLabs TTS Success: Audio buffer size', audioBuffer.length);
   return audioBuffer.toString('base64');
 }
 
@@ -76,10 +75,6 @@ export async function callOpenAIChat(systemPrompt: string, userPrompt: string, h
   const messages: any[] = [{ role: 'system', content: systemPrompt }];
   if (history) history.forEach(m => messages.push({ role: m.role, content: m.content }));
   // messages.push({ role: 'user', content: userPrompt });
-
-  console.log('------------------openai input------------------');
-  console.log('OpenAI Messages:', messages);
-  console.log('------------------openai input------------------');
 
   const resp = await fetch(OPENAI_URL, { method: 'POST', headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o-mini', messages }) });
   if (!resp.ok) throw new Error(`OpenAI Error: ${await resp.text()}`);
