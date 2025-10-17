@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config({ override: true });
+dotenv.config({ path: "/opt/jennifer/.env", override: true });
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
