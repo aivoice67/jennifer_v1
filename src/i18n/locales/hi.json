@@ -47,7 +47,7 @@
         "question": "Aap kab-kab tanaav mehsoos karte hain?",
         "options": {
           "daily": "Roz",
-          "weekly": "Hafta mein",
+          "weekly": "Hafte mein",
           "monthly": "Mahine mein",
           "rarely": "Kabhi kabhi",
           "never": "Kabhi nahi"
